@@ -1,0 +1,191 @@
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<style>
+.spinner {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    margin-left: -50px; 
+    margin-top: -50px; 
+    text-align:center;
+    z-index:1234;
+    overflow: auto;
+    width: 100px; 
+    height: 102px;
+}
+ 
+ #app 
+ {
+ position: fixed;
+    top: 10%;
+    left: 40%;
+    margin-left: -50px; 
+    margin-top: -50px; 
+    text-align:center;
+ 
+ }
+  #app1 
+ {
+ position: fixed;
+    top: 15%;
+    left: 40%;
+    margin-left: -50px; 
+    margin-top: -50px; 
+    text-align:center;
+ 
+ }
+ #myTable
+ {
+    position: fixed;
+    top: 30%;
+    left: 40%;
+    margin-left: -50px; 
+    margin-top: -50px; 
+    text-align:center;
+ }
+</style>
+
+<body>
+
+<div id= "app">
+<input id="zip" name="zipcode" type="text"/>
+
+<button type="button" id="submit" name="submit" onclick="getweather()" > submit</button>
+</div>
+<div id="spinner" class="spinner" >
+    <img id="img-spinner" src="spinner.gif" alt="Loading" style="visibility:hidden"/>
+</div>
+<script type="text/javascript">
+    function getweather()
+    {
+		var tableLength = document.getElementById("myTable").rows.length;
+		if(tableLength > 1){
+			for(i = 1;i<tableLength;i++){
+				document.getElementById("myTable").deleteRow(1);
+			}
+		}
+        var httpRequest = new XMLHttpRequest();
+        var zip = document.getElementById("zip").value ;
+		if(zip.length < 0)
+			{
+				alert("Please Enter Valid Data");
+			}
+		var zip_data;
+		
+		httpRequest.onreadystatechange=function()
+       {
+	   
+   if (httpRequest.readyState==4 && httpRequest.status==200)
+    {
+	
+	zip_data = httpRequest.responseText;
+	var mapStateAndCity = {};
+	mapStateAndCity = getStateAndCity(zip_data);
+	var state = mapStateAndCity["state"];
+	var city = mapStateAndCity["city"];
+	var formatCity = city.replace(" ", "_");
+	document.getElementById("state").innerHTML = state;
+	document.getElementById("city").innerHTML = city;
+	getforecast(formatCity, state);
+	
+    }
+}
+
+httpRequest.open('GET', "http://api.wunderground.com/api/68f67a156819574b/geolookup/q/"+zip+".json" ,true);
+httpRequest.send();
+
+
+
+    }
+	function getStateAndCity(jsonResponse){
+	var obj = JSON.parse(jsonResponse);
+	var state = obj.location.state;
+	var city = obj.location.city;
+	var map = {};
+	map["state"] = state;
+	map["city"] = city;
+	return map
+}
+	function getWeatherCondition(jsonResponse){
+		var obj = JSON.parse(jsonResponse);
+		var weatherDaysArray = [];
+		for(count = 0; count < 3; count++) {
+			var day = {};
+			day["high"] = obj.forecast.simpleforecast.forecastday[count].high.fahrenheit;
+			day["low"] = obj.forecast.simpleforecast.forecastday[count].low.fahrenheit;
+			day["conditions"] = obj.forecast.simpleforecast.forecastday[count].conditions;
+			day["weekday"] = obj.forecast.simpleforecast.forecastday[count].date.weekday;
+			weatherDaysArray.push(day);
+		}
+		return weatherDaysArray;
+	}
+	
+	function getforecast(city, state)
+	{
+	//alert("Here");
+	var httpRequest = new XMLHttpRequest();
+			httpRequest.onreadystatechange=function()
+       {
+	  // if( httpRequest.readyState == 0 || httpRequest.readyState== 1 || httpRequest.readyState== 2 || httpRequest.readyState== 3)
+	  if(httpRequest.readyState != 4)
+	   {
+	      var img = document.getElementById('img-spinner');
+         img.style.visibility = 'visible';
+	   }
+	   
+      else if (httpRequest.readyState==4 && httpRequest.status==200)
+      {
+	  var img = document.getElementById('img-spinner');
+         img.style.visibility = 'hidden';
+	    //document.write( httpRequest.responseText);
+		var responseData = httpRequest.responseText;
+		var weatherArray = getWeatherCondition(responseData);
+		for(var i = 2 ; i >= 0; i--){
+		var map = {};
+		map = weatherArray[i];
+		var high = map["high"];
+		var low = map["low"];
+		var conditions = map["conditions"];
+		var weekday = map["weekday"]
+		table = document.getElementById("myTable");
+		row = table.insertRow(1);
+		var cell1 = row.insertCell(0);
+		var cell2 = row.insertCell(1);
+		var cell3 = row.insertCell(2);
+		var cell4 = row.insertCell(3);
+		cell1.innerHTML = weekday;
+		cell2.innerHTML = low;
+		cell3.innerHTML = high;
+		cell4.innerHTML = conditions;
+		}
+      }
+	  
+}
+
+httpRequest.open('GET', "http://api.wunderground.com/api/68f67a156819574b/forecast/q/"+state+"/"+city+".json" ,true);
+httpRequest.send();
+
+	}
+
+</script>
+<table id="app1">
+	<tr>
+		<td><h3>State</h3></td>
+		<td><h3 id="state"> </h3></td>
+	</tr>
+	<tr>
+		<td><h3>City</h3></td>
+		<td><h3 id="city"></h3></td>
+	</tr>
+</table>
+<table id="myTable">
+<th>Weekday</th>
+<th>Lowest(F)</th>
+<th>Highest (F)</th>
+<th>Conditions</th> 
+</table>
+</body>
+</html>
